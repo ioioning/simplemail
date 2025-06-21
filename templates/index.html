@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SimpleMail</title> <!-- Назва вкладки -->
+  <script src="/static/script.js"></script> <!-- Підключаємо JS -->
+</head>
+<body>
+  <h1>SimpleMail</h1> <!-- Заголовок -->
+
+  <!-- Введення email користувача -->
+  <label>Ваша адреса:</label>
+  <input id="yourEmail" type="text"><br><br>
+
+  <!-- Введення email отримувача -->
+  <label>Кому:</label>
+  <input id="toEmail" type="text"><br>
+
+  <!-- Поле для тексту повідомлення -->
+  <label>Повідомлення:</label><br>
+  <textarea id="message" rows="4" cols="50"></textarea><br>
+
+  <!-- Кнопка для надсилання -->
+  <button onclick="sendMessage()">Надіслати</button>
+
+  <hr>
+
+  <!-- Кнопка для перегляду вхідних -->
+  <button onclick="loadInbox()">Показати вхідні</button>
+
+  <!-- Сюди вставлятимемо повідомлення -->
+  <div id="inbox"></div>
+</body>
+</html>
+
