@@ -361,153 +361,133 @@
     </div>
 
     <div class="status-message" id="statusMessage"></div>
+<script>
+    function showCompose() {
+        document.getElementById('compose').classList.add('active');
+        document.getElementById('inbox').classList.remove('active');
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
 
-    <script>
-        // Емулюємо базу даних в localStorage
-        function getEmails() {
-            return JSON.parse(localStorage.getItem('simplemail_emails') || '[]');
+    function showInbox() {
+        document.getElementById('compose').classList.remove('active');
+        document.getElementById('inbox').classList.add('active');
+        loadInbox();
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector('.nav-item').classList.add('active');
+    }
+
+    function sendMessage() {
+        const yourEmail = document.getElementById('yourEmail').value.trim().toLowerCase();
+        const toEmail = document.getElementById('toEmail').value.trim().toLowerCase();
+        const subject = document.getElementById('subject').value.trim() || 'Без теми';
+        const message = document.getElementById('message').value.trim();
+
+        if (!yourEmail || !toEmail || !message) {
+            showStatus('Будь ласка, заповніть всі обовʼязкові поля', 'error');
+            return;
         }
 
-        function saveEmails(emails) {
-            localStorage.setItem('simplemail_emails', JSON.stringify(emails));
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(yourEmail) || !emailRegex.test(toEmail)) {
+            showStatus('Введіть коректні email адреси', 'error');
+            return;
         }
 
-        function showCompose() {
-            document.getElementById('compose').classList.add('active');
-            document.getElementById('inbox').classList.remove('active');
-            
-            // Оновлюємо активний пункт меню
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-        }
-
-        function showInbox() {
-            document.getElementById('compose').classList.remove('active');
-            document.getElementById('inbox').classList.add('active');
-            loadInbox();
-            
-            // Оновлюємо активний пункт меню
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelector('.nav-item').classList.add('active');
-        }
-
-        function sendMessage() {
-            const yourEmail = document.getElementById('yourEmail').value;
-            const toEmail = document.getElementById('toEmail').value;
-            const subject = document.getElementById('subject').value || 'Без теми';
-            const message = document.getElementById('message').value;
-
-            if (!yourEmail || !toEmail || !message) {
-                showStatus('Будь ласка, заповніть всі обов\'язкові поля', 'error');
-                return;
-            }
-
-            // Перевіряємо валідність email
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(yourEmail) || !emailRegex.test(toEmail)) {
-                showStatus('Введіть коректні email адреси', 'error');
-                return;
-            }
-
-            const emails = getEmails();
-            const newEmail = {
-                id: Date.now(),
+        fetch("/send", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
                 from: yourEmail,
                 to: toEmail,
                 subject: subject,
-                message: message,
-                timestamp: new Date().toISOString(),
-                read: false
-            };
-
-            emails.push(newEmail);
-            saveEmails(emails);
-
-            // Очищуємо форму
-            document.getElementById('subject').value = '';
-            document.getElementById('message').value = '';
-
-            showStatus('Повідомлення надіслано успішно!', 'success');
-        }
-
-        function loadInbox() {
-            const yourEmail = document.getElementById('yourEmail').value;
-            if (!yourEmail) {
-                document.getElementById('emailList').innerHTML = `
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                        </svg>
-                        <p>Спочатку введіть вашу email адресу</p>
-                    </div>
-                `;
-                return;
+                message: message
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "ok") {
+                document.getElementById('subject').value = '';
+                document.getElementById('message').value = '';
+                showStatus('Повідомлення надіслано успішно!', 'success');
+            } else {
+                showStatus('Сталася помилка при надсиланні', 'error');
             }
+        })
+        .catch(() => {
+            showStatus('Сталася помилка при зʼєднанні з сервером', 'error');
+        });
+    }
 
-            const emails = getEmails();
-            const userEmails = emails.filter(email => email.to === yourEmail);
-
-            const emailListHTML = userEmails.length === 0 ? `
+    function loadInbox() {
+        const yourEmail = document.getElementById('yourEmail').value.trim().toLowerCase();
+        if (!yourEmail) {
+            document.getElementById('emailList').innerHTML = `
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                     </svg>
-                    <p>Немає повідомлень</p>
+                    <p>Спочатку введіть вашу email адресу</p>
                 </div>
-            ` : userEmails.reverse().map(email => {
-                const date = new Date(email.timestamp);
-                const timeString = date.toLocaleString('uk-UA', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+            `;
+            return;
+        }
 
-                return `
-                    <div class="email-item ${!email.read ? 'unread' : ''}" onclick="openEmail(${email.id})">
-                        <div class="email-time">${timeString}</div>
-                        <div class="email-sender">${email.from}</div>
-                        <div class="email-subject">${email.subject}</div>
-                        <div class="email-preview">${email.message.substring(0, 100)}${email.message.length > 100 ? '...' : ''}</div>
+        fetch(`/inbox/${yourEmail}`)
+            .then(res => res.json())
+            .then(emails => {
+                const emailListHTML = emails.length === 0 ? `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                        <p>Немає повідомлень</p>
                     </div>
-                `;
-            }).join('');
+                ` : emails.reverse().map(email => {
+                    const date = new Date(email.timestamp || Date.now());
+                    const timeString = date.toLocaleString('uk-UA', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
 
-            document.getElementById('emailList').innerHTML = emailListHTML;
-        }
+                    return `
+                        <div class="email-item" onclick='openEmail(${JSON.stringify(email).replace(/'/g, "\\'")})'>
+                            <div class="email-time">${timeString}</div>
+                            <div class="email-sender">${email.from}</div>
+                            <div class="email-subject">${email.subject || 'Без теми'}</div>
+                            <div class="email-preview">${email.message.substring(0, 100)}${email.message.length > 100 ? '...' : ''}</div>
+                        </div>
+                    `;
+                }).join('');
 
-        function openEmail(emailId) {
-            const emails = getEmails();
-            const email = emails.find(e => e.id === emailId);
-            
-            if (email) {
-                // Позначаємо як прочитане
-                email.read = true;
-                saveEmails(emails);
-                
-                alert(`Від: ${email.from}\nТема: ${email.subject}\n\nПовідомлення:\n${email.message}`);
-                loadInbox(); // Оновлюємо список
-            }
-        }
+                document.getElementById('emailList').innerHTML = emailListHTML;
+            });
+    }
 
-        function showStatus(message, type) {
-            const statusEl = document.getElementById('statusMessage');
-            statusEl.textContent = message;
-            statusEl.className = `status-message ${type}`;
-            statusEl.classList.add('show');
+    function openEmail(email) {
+        alert(`Від: ${email.from}\nТема: ${email.subject || 'Без теми'}\n\nПовідомлення:\n${email.message}`);
+    }
 
-            setTimeout(() => {
-                statusEl.classList.remove('show');
-            }, 3000);
-        }
+    function showStatus(message, type) {
+        const statusEl = document.getElementById('statusMessage');
+        statusEl.textContent = message;
+        statusEl.className = `status-message ${type}`;
+        statusEl.classList.add('show');
 
-        // Автоматично завантажуємо вхідні при завантаженні сторінки
-        window.onload = function() {
-            showInbox();
-        };
-    </script>
-</body>
-</html>
+        setTimeout(() => {
+            statusEl.classList.remove('show');
+        }, 3000);
+    }
+
+    window.onload = function() {
+        showInbox();
+    };
+</script>
+
