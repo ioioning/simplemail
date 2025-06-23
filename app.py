@@ -1,36 +1,58 @@
-# Імпортуємо бібліотеки Flask для створення веб-сервера
 from flask import Flask, request, render_template, jsonify
+from flask_sqlalchemy import SQLAlchemy  # Імпортуємо SQLAlchemy
+import os
 
-# Створюємо екземпляр додатку Flask
 app = Flask(__name__)
 
-# Це словник, який зберігатиме всі повідомлення для кожної адреси
-inbox = {}  # Формат: { 'email@site.com': [ { 'from': ..., 'message': ... }, ... ] }
+# Налаштування SQLite — створює файл бази у цій же папці
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///emails.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Головна сторінка — показує HTML інтерфейс
+db = SQLAlchemy(app)  # Створюємо обʼєкт БД
+
+# Модель таблиці "messages"
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)  # Унікальний ID
+    sender = db.Column(db.String(120), nullable=False)  # Від кого
+    recipient = db.Column(db.String(120), nullable=False)  # Кому
+    content = db.Column(db.Text, nullable=False)  # Повідомлення
+
+# Головна сторінка
 @app.route("/")
 def index():
-    return render_template("index.html")  # Повертаємо HTML-файл
+    return render_template("index.html")
 
-# API для надсилання листа
+# Надсилання листа
 @app.route("/send", methods=["POST"])
 def send_email():
-    data = request.json  # Отримуємо JSON-дані з запиту
-    to = data["to"].strip().lower()      # Кому
-    sender = data["from"].strip().lower()  # Від кого
-    message = data["message"].strip()    # Повідомлення
+    data = request.json
+    to = data["to"].strip().lower()
+    sender = data["from"].strip().lower()
+    message = data["message"].strip()
 
-    # Додаємо лист у список одержувача
-    inbox.setdefault(to, []).append({ "from": sender, "message": message })
-    return jsonify({ "status": "ok" })  # Повертаємо успішну відповідь
+    # Створюємо обʼєкт повідомлення
+    new_msg = Message(sender=sender, recipient=to, content=message)
+    db.session.add(new_msg)  # Додаємо в сесію
+    db.session.commit()      # Зберігаємо в базу
 
-# API для перегляду вхідних повідомлень
+    return jsonify({ "status": "ok" })
+
+# Отримати вхідні для конкретної адреси
 @app.route("/inbox/<email>")
 def get_inbox(email):
-    email = email.strip().lower()  # Нормалізуємо адресу
-    messages = inbox.get(email, [])  # Отримуємо повідомлення
-    return jsonify(messages)  # Повертаємо їх як JSON
+    email = email.strip().lower()
+    messages = Message.query.filter_by(recipient=email).all()
+
+    # Перетворюємо на словники
+    result = []
+    for m in messages:
+        result.append({ "from": m.sender, "message": m.content })
+
+    return jsonify(result)
 
 if __name__ == "__main__":
+    if not os.path.exists("emails.db"):
+        with app.app_context():
+            db.create_all()
     app.run(debug=True)
 

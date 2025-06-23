@@ -1,34 +1,513 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-  <title>SimpleMail</title> <!-- Назва вкладки -->
-  <script src="/static/script.js"></script> <!-- Підключаємо JS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimpleMail</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mail-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            min-height: calc(100vh - 100px);
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .compose-btn {
+            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .compose-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(44, 44, 44, 0.4);
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-item:hover {
+            background-color: #f0f2ff;
+        }
+
+        .nav-item.active {
+            background-color: #e8ebff;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .compose-form {
+            padding: 2rem;
+            display: none;
+        }
+
+        .compose-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .inbox {
+            padding: 0;
+            display: none;
+        }
+
+        .inbox.active {
+            display: block;
+        }
+
+        .inbox-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e1e5e9;
+            background: #f8f9fa;
+        }
+
+        .inbox-header h2 {
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: 400;
+        }
+
+        .email-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e1e5e9;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .email-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .email-item.unread {
+            background-color: #f0f2ff;
+            font-weight: 500;
+        }
+
+        .email-sender {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .email-subject {
+            color: #555;
+            margin-bottom: 0.25rem;
+        }
+
+        .email-preview {
+            color: #888;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .email-time {
+            float: right;
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .status-message.success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .status-message.error {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+
+        .status-message.show {
+            transform: translateX(0);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>SimpleMail</h1> <!-- Заголовок -->
+    <div class="header">
+        <h1>
+            <div class="mail-icon">📧</div>
+            SimpleMail
+        </h1>
+    </div>
 
-  <!-- Введення email користувача -->
-  <label>Ваша адреса:</label>
-  <input id="yourEmail" type="text"><br><br>
+    <div class="container">
+        <div class="sidebar">
+            <button class="compose-btn" onclick="showCompose()">
+                  write
+            </button>
+            
+            <div class="nav-item active" onclick="showInbox()">
+                 incoming
+            </div>
+            <div class="nav-item" onclick="showCompose()">
+                 create
+            </div>
+            <div class="nav-item">
+                 send
+            </div>
+            <div class="nav-item">
+                 delete
+            </div>
+        </div>
 
-  <!-- Введення email отримувача -->
-  <label>Кому:</label>
-  <input id="toEmail" type="text"><br>
+        <div class="main-content">
+            <div class="compose-form active" id="compose">
+                <h2 style="margin-bottom: 1.5rem; color: #333; font-weight: 400;">Новий лист</h2>
+                
+                <div class="form-group">
+                    <label for="yourEmail">Ваша адреса:</label>
+                    <input id="yourEmail" type="email" placeholder="your.email@example.com">
+                </div>
 
-  <!-- Поле для тексту повідомлення -->
-  <label>Повідомлення:</label><br>
-  <textarea id="message" rows="4" cols="50"></textarea><br>
+                <div class="form-group">
+                    <label for="toEmail">Кому:</label>
+                    <input id="toEmail" type="email" placeholder="recipient@example.com">
+                </div>
 
-  <!-- Кнопка для надсилання -->
-  <button onclick="sendMessage()">Надіслати</button>
+                <div class="form-group">
+                    <label for="subject">Тема:</label>
+                    <input id="subject" type="text" placeholder="Тема повідомлення">
+                </div>
 
-  <hr>
+                <div class="form-group">
+                    <label for="message">Повідомлення:</label>
+                    <textarea id="message" placeholder="Введіть ваше повідомлення..."></textarea>
+                </div>
 
-  <!-- Кнопка для перегляду вхідних -->
-  <button onclick="loadInbox()">Показати вхідні</button>
+                <button class="send-btn" onclick="sendMessage()">
+                     send
+                </button>
+            </div>
 
-  <!-- Сюди вставлятимемо повідомлення -->
-  <div id="inbox"></div>
+            <div class="inbox" id="inbox">
+                <div class="inbox-header">
+                    <h2>Вхідні повідомлення</h2>
+                </div>
+                <div class="email-list" id="emailList">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                        <p>Немає повідомлень</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <script>
+        // Емулюємо базу даних в localStorage
+        function getEmails() {
+            return JSON.parse(localStorage.getItem('simplemail_emails') || '[]');
+        }
+
+        function saveEmails(emails) {
+            localStorage.setItem('simplemail_emails', JSON.stringify(emails));
+        }
+
+        function showCompose() {
+            document.getElementById('compose').classList.add('active');
+            document.getElementById('inbox').classList.remove('active');
+            
+            // Оновлюємо активний пункт меню
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        function showInbox() {
+            document.getElementById('compose').classList.remove('active');
+            document.getElementById('inbox').classList.add('active');
+            loadInbox();
+            
+            // Оновлюємо активний пункт меню
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector('.nav-item').classList.add('active');
+        }
+
+        function sendMessage() {
+            const yourEmail = document.getElementById('yourEmail').value;
+            const toEmail = document.getElementById('toEmail').value;
+            const subject = document.getElementById('subject').value || 'Без теми';
+            const message = document.getElementById('message').value;
+
+            if (!yourEmail || !toEmail || !message) {
+                showStatus('Будь ласка, заповніть всі обов\'язкові поля', 'error');
+                return;
+            }
+
+            // Перевіряємо валідність email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(yourEmail) || !emailRegex.test(toEmail)) {
+                showStatus('Введіть коректні email адреси', 'error');
+                return;
+            }
+
+            const emails = getEmails();
+            const newEmail = {
+                id: Date.now(),
+                from: yourEmail,
+                to: toEmail,
+                subject: subject,
+                message: message,
+                timestamp: new Date().toISOString(),
+                read: false
+            };
+
+            emails.push(newEmail);
+            saveEmails(emails);
+
+            // Очищуємо форму
+            document.getElementById('subject').value = '';
+            document.getElementById('message').value = '';
+
+            showStatus('Повідомлення надіслано успішно!', 'success');
+        }
+
+        function loadInbox() {
+            const yourEmail = document.getElementById('yourEmail').value;
+            if (!yourEmail) {
+                document.getElementById('emailList').innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                        <p>Спочатку введіть вашу email адресу</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const emails = getEmails();
+            const userEmails = emails.filter(email => email.to === yourEmail);
+
+            const emailListHTML = userEmails.length === 0 ? `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                    <p>Немає повідомлень</p>
+                </div>
+            ` : userEmails.reverse().map(email => {
+                const date = new Date(email.timestamp);
+                const timeString = date.toLocaleString('uk-UA', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <div class="email-item ${!email.read ? 'unread' : ''}" onclick="openEmail(${email.id})">
+                        <div class="email-time">${timeString}</div>
+                        <div class="email-sender">${email.from}</div>
+                        <div class="email-subject">${email.subject}</div>
+                        <div class="email-preview">${email.message.substring(0, 100)}${email.message.length > 100 ? '...' : ''}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('emailList').innerHTML = emailListHTML;
+        }
+
+        function openEmail(emailId) {
+            const emails = getEmails();
+            const email = emails.find(e => e.id === emailId);
+            
+            if (email) {
+                // Позначаємо як прочитане
+                email.read = true;
+                saveEmails(emails);
+                
+                alert(`Від: ${email.from}\nТема: ${email.subject}\n\nПовідомлення:\n${email.message}`);
+                loadInbox(); // Оновлюємо список
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.classList.add('show');
+
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // Автоматично завантажуємо вхідні при завантаженні сторінки
+        window.onload = function() {
+            showInbox();
+        };
+    </script>
 </body>
 </html>
-
